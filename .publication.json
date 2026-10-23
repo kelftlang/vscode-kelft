@@ -1,7 +1,7 @@
 {
   "schema": "kelft.public-export/1",
   "kind": "extension",
-  "sourceRevision": "a7edbaad0e602e4837e2e58925bcdef17613fbe5",
+  "sourceRevision": "0b34cbb30b801cb674209eaa5c3664d45a44b0a7",
   "sourceDirty": true,
   "publication": "prepared-not-published",
   "files": [
@@ -32,12 +32,12 @@
     },
     {
       "path": "CHANGELOG.md",
-      "sha256": "sha256:8b14681bc076d1cb3be5848cebbea938594158aa8e924dfb4bcb3efc20d6f144",
+      "sha256": "sha256:a2a11faf557b33909faa3b861e23c87c562c7efce659012c255ff7045902dd5a",
       "bytes": 746
     },
     {
       "path": "CONTRIBUTING.md",
-      "sha256": "sha256:23d1fd5b4ae653167f4166055833fe959f789e532349014c7b243c648574614a",
+      "sha256": "sha256:807fc86be92f56624e43c20fc538e27b1a03401bbc0c2d65a43d7c08088cfb34",
       "bytes": 2349
     },
     {
@@ -67,7 +67,7 @@
     },
     {
       "path": "README.md",
-      "sha256": "sha256:efcb5cafd334e36f7a5b436f2a8ab026e8aeeea64a2f9c53335808f2c9f976d0",
+      "sha256": "sha256:f2eadfca292b4127883e3710291057ce3147666b6e06d36e37e735d96449f3e3",
       "bytes": 5330
     },
     {
@@ -112,8 +112,8 @@
     },
     {
       "path": "docs/releasing.md",
-      "sha256": "sha256:581a4de95bd82334bf8c4c211384217151a7a9cecce4de1e2643a7f3d930f8f7",
-      "bytes": 5892
+      "sha256": "sha256:b0c28ed99d6acf485bdbefb7d8fcd444c0db5e70e023a037af437efed32fc2c8",
+      "bytes": 6534
     },
     {
       "path": "language-configuration.json",
@@ -127,7 +127,7 @@
     },
     {
       "path": "package.json",
-      "sha256": "sha256:ebaf33322d3f50171c2c64619955c7822014370e10bc060cebfa39ad19a46efc",
+      "sha256": "sha256:c646eacec7b761f736873b152ed531393438e214140901cbc164502e7b1a0191",
       "bytes": 3450
     },
     {
@@ -162,8 +162,8 @@
     },
     {
       "path": "scripts/release.mjs",
-      "sha256": "sha256:11cb645244aff84fb668831e3629d729fd7496c394a35d65664f89dcac3ab5a3",
-      "bytes": 19753
+      "sha256": "sha256:5ae991dd1f69937b44e537a238e960f2f02ed0bc0859f71efeb9c6e470ea96f6",
+      "bytes": 20661
     },
     {
       "path": "scripts/test-editor.mjs",
@@ -212,7 +212,7 @@
     },
     {
       "path": "tests/editor/index.cjs",
-      "sha256": "sha256:4c1d9fd25716f9b2e064d32c3c144210415429e1c61f29d9f09618aebfb2d862",
+      "sha256": "sha256:be7cf4154af03b0f278f76fc984845e946212deb86f9e1aeb5cb70311e91b304",
       "bytes": 7810
     },
     {
@@ -227,13 +227,13 @@
     },
     {
       "path": "tests/package.test.mjs",
-      "sha256": "sha256:db8a2a0ba40668bbb8d38652243d33eac97e419dfd4a38ed8025675d69c11a7d",
+      "sha256": "sha256:f98ed993dfa18c231d14377ad3dcf2026ba1443d5f4fdd13f2bc4036d2fab8c6",
       "bytes": 2125
     },
     {
       "path": "tests/release.test.mjs",
-      "sha256": "sha256:3b0d4d969aecf324d0da8078d26301cbc90ec87bddffc036669906b851360003",
-      "bytes": 15257
+      "sha256": "sha256:e36ab4570eb4285a465a14d8cd4da462ba7482a2b27971564ea4b792f937aa3f",
+      "bytes": 18851
     }
   ]
 }

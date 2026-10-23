@@ -12,8 +12,8 @@ test('scoped package identity becomes a valid VSIX identity without altering oth
   assert.equal(source.name, '@kelftlang/vscode');
   assert.equal(manifest.name, 'vscode');
   assert.equal(manifest.publisher, 'kelftlang');
-  assert.equal(manifest.version, '0.1.0');
-  assert.equal(archiveName(source), 'vscode-0.1.0.vsix');
+  assert.equal(manifest.version, '0.1.1');
+  assert.equal(archiveName(source), 'vscode-0.1.1.vsix');
   assert.deepEqual({...manifest, name: source.name}, source);
   for (const name of ['@scope/../../bad', 'bad/name', '../vscode', '@scope/']) assert.throws(() => packageManifest({...source, name}), /Invalid/);
   assert.throws(() => packageManifest({...source, version: '../bad'}), /Invalid/);

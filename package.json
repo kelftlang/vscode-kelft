@@ -2,7 +2,7 @@
   "name": "@kelftlang/vscode",
   "displayName": "Kelft",
   "description": "Kelft icons, Core and Intent editing, static completion, native checks, and builds.",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "publisher": "kelftlang",
   "license": "(MIT OR Apache-2.0)",
   "repository": {"type": "git", "url": "https://github.com/kelftlang/vscode-kelft.git"},

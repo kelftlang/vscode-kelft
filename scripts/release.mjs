@@ -79,31 +79,39 @@ export function verifyGitHubKey(verification, publicKeys, command = runCommand) 
   }
 }
 
-export function assertDraft(release, identity, sha) {
-  if (!release) return;
-  check(release.draft === true && release.immutable !== true && !release.published_at, 'This version is published or immutable; bump the version instead of replacing it.');
-  check(release.tag_name === identity.tag && release.target_commitish === sha, 'Existing draft belongs to a different version or source commit.');
-  check(Number.isSafeInteger(release.id) && release.id > 0, 'Invalid draft release identity.');
+export function assertDraft(release, identity) {
+  check(release && Number.isSafeInteger(release.id) && release.id > 0, `Invalid draft release identity for ${identity.tag}: ${release?.id ?? '<missing>'}.`);
+  check(release.draft === true && release.immutable !== true && !release.published_at,
+    `Release ${release.id} for ${identity.tag} is published, immutable or not a draft (draft=${release.draft}, immutable=${release.immutable}, published_at=${release.published_at ?? 'none'}); use a new version.`);
+  check(release.tag_name === identity.tag,
+    `Release tag mismatch: expected ${identity.tag}, received ${release.tag_name ?? '<missing>'} (target_commitish=${release.target_commitish ?? '<missing>'}).`);
 }
 
-export async function assertTag(api, identity, sha) {
+export async function assertTag(api, identity, sha, {required = false} = {}) {
   const ref = await api('GET', `/git/ref/tags/${encodeURIComponent(identity.tag)}`, undefined, {missing: true});
-  if (!ref) return null;
-  check(ref.ref === 'refs/tags/' + identity.tag, 'Unexpected tag reference.');
+  if (!ref) {
+    check(!required, `Required tag ${identity.tag} is missing; draft source cannot be verified (expected commit ${sha}).`);
+    return null;
+  }
+  check(ref.ref === 'refs/tags/' + identity.tag, `Unexpected tag reference: expected refs/tags/${identity.tag}, received ${ref.ref ?? '<missing>'}.`);
   let object = ref.object;
   // Resolve bounded annotated-tag chains as well as ordinary lightweight tags.
   for (let depth = 0; object?.type === 'tag' && depth < 8; depth++) {
     check(/^[a-f0-9]{40}$/.test(object.sha ?? ''), 'Invalid annotated tag.');
     object = (await api('GET', '/git/tags/' + object.sha)).object;
   }
-  check(object?.type === 'commit' && object.sha === sha, 'The version tag points to a different commit; it will not be moved.');
+  check(object?.type === 'commit' && object.sha === sha,
+    `Version tag ${identity.tag} points to a different commit: expected ${sha}, received ${object?.type ?? '<missing>'}:${object?.sha ?? '<missing>'}; the tag will not be moved.`);
   return ref;
 }
 
 export async function existingRelease(api, identity, sha) {
-  await assertTag(api, identity, sha);
+  const ref = await assertTag(api, identity, sha);
   const release = await api('GET', '/releases/tags/' + encodeURIComponent(identity.tag), undefined, {missing: true});
-  assertDraft(release, identity, sha);
+  if (release) {
+    assertDraft(release, identity);
+    check(ref, `Required tag ${identity.tag} is missing; existing draft ${release.id} cannot be bound to expected commit ${sha}.`);
+  }
   return release;
 }
 
@@ -151,12 +159,14 @@ export async function prepareDraft({api, upload, download, identity, context, no
   let release = await existingRelease(api, identity, context.sha);
   const ref = await assertTag(api, identity, context.sha);
   if (!ref) await api('POST', '/git/refs', {ref: 'refs/tags/' + identity.tag, sha: context.sha});
+  // target_commitish is unused once the tag exists; resolve the tag itself.
+  await assertTag(api, identity, context.sha, {required: true});
   if (!release) release = await api('POST', '/releases', {tag_name: identity.tag, target_commitish: context.sha, name: identity.title, body: 'Release preparation is running. Review the completed Actions summary before publishing.', draft: true, prerelease: identity.prerelease});
-  assertDraft(release, identity, context.sha);
+  assertDraft(release, identity);
   const getDraft = async () => {
-    await assertTag(api, identity, context.sha);
+    await assertTag(api, identity, context.sha, {required: true});
     const current = await api('GET', '/releases/' + release.id);
-    assertDraft(current, identity, context.sha);return current;
+    assertDraft(current, identity);return current;
   };
   // A failed refresh cannot leave a previously successful readiness notice.
   await getDraft();
@@ -185,7 +195,8 @@ export async function prepareDraft({api, upload, download, identity, context, no
   }
   await getDraft();
   const ready = await api('PATCH', '/releases/' + release.id, {name: identity.title, body: notes, draft: true, prerelease: identity.prerelease});
-  assertDraft(ready, identity, context.sha);
+  assertDraft(ready, identity);
+  await assertTag(api, identity, context.sha, {required: true});
   check(ready.html_url?.startsWith(`https://github.com/${repository}/releases/`), 'Unexpected draft URL.');
   return ready;
 }

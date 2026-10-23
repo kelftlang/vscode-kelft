@@ -28,7 +28,7 @@ Keep changes focused, explain their purpose, and describe the validation you ran
 Add relevant regression coverage for behavior changes and screenshots for visual
 changes. Preserve third-party notices and follow existing code conventions.
 
-`pnpm package` creates `vscode-0.1.0.vsix` and a SHA-256 receipt. The source package
+`pnpm package` creates `vscode-0.1.1.vsix` and a SHA-256 receipt. The source package
 is named `@kelftlang/vscode`; packaging uses a temporary manifest with the unscoped
 name `vscode`, producing extension ID `kelftlang.vscode` without changing the
 source manifest.

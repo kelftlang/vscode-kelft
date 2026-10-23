@@ -21,14 +21,14 @@ const env = {GITHUB_REPOSITORY: repository, GITHUB_SERVER_URL: 'https://github.c
   GITHUB_REF: 'refs/heads/main', GITHUB_SHA: sha, GITHUB_RUN_ID: '123', GITHUB_RUN_ATTEMPT: '1'};
 
 test('release identity, exact manual main source, and one matching changelog section are mandatory', () => {
-  assert.equal(identity.tag, 'v0.1.0'); assert.equal(identity.title, 'Kelft for VS Code v0.1.0');
-  assert.equal(identity.file, 'vscode-0.1.0.vsix'); assert.equal(identity.prerelease, false);
+  assert.equal(identity.tag, 'v0.1.1'); assert.equal(identity.title, 'Kelft for VS Code v0.1.1');
+  assert.equal(identity.file, 'vscode-0.1.1.vsix'); assert.equal(identity.prerelease, false);
   assert.equal(releaseIdentity({...source, version: '0.2.0-beta.1'}).prerelease, true);
   for (const patch of [{name: 'vscode'}, {publisher: 'other'}, {version: '01.0.0'}]) assert.throws(() => releaseIdentity({...source, ...patch}));
   assert.deepEqual(releaseContext(env), context);
   for (const patch of [{GITHUB_REF: 'refs/heads/dev'}, {GITHUB_EVENT_NAME: 'push'}, {GITHUB_SHA: 'main'}, {GITHUB_REPOSITORY: 'other/repo'}, {GITHUB_RUN_ATTEMPT: ''}]) assert.throws(() => releaseContext({...env, ...patch}));
-  assert.equal(changelogSection('# Changes\r\n\r\n## 0.1.0\r\n\r\n- New features.\r\n\r\n## 0.0.1\r\nOlder', '0.1.0'), '- New features.');
-  for (const text of ['## 0.2.0\nMissing', '## 0.1.0\n', '## 0.1.0\nFirst\n## 0.1.0\nDuplicate']) assert.throws(() => changelogSection(text, '0.1.0'), /section/);
+  assert.equal(changelogSection('# Changes\r\n\r\n## 0.1.1\r\n\r\n- New features.\r\n\r\n## 0.0.1\r\nOlder', '0.1.1'), '- New features.');
+  for (const text of ['## 0.2.0\nMissing', '## 0.1.1\n', '## 0.1.1\nFirst\n## 0.1.1\nDuplicate']) assert.throws(() => changelogSection(text, '0.1.1'), /section/);
 });
 
 test('source signature rejects unsigned, invalid and differently signed commits', () => {
@@ -69,7 +69,7 @@ async function zipFixture(t, mutate = () => {}) {
   const rows = new Map(['LICENSE.txt','LICENSE-MIT','LICENSE-APACHE','LICENSES/MIT-0.txt','THIRD-PARTY-NOTICES.md','readme.md','changelog.md','docs/licensing.md','docs/releasing.md','licensing.json','dist/extension.cjs',
     'assets/icon.png','assets/intrinsics.json','assets/kelft-icon-light.svg','assets/kelft-icon-dark.svg','syntaxes/kelft.tmLanguage.json','snippets/kelft.json'].map(name => ['extension/' + name, 'fixture']));
   rows.set('extension/package.json', JSON.stringify(packageManifest(source)));
-  rows.set('extension.vsixmanifest', '<Identity Id="vscode" Version="0.1.0" Publisher="kelftlang" />');
+  rows.set('extension.vsixmanifest', '<Identity Id="vscode" Version="0.1.1" Publisher="kelftlang" />');
   mutate(rows);
   const zip = new yazl.ZipFile(), chunks = [];
   const complete = new Promise((resolve, reject) => {zip.outputStream.on('data', bytes => chunks.push(bytes));zip.outputStream.on('end', resolve);zip.outputStream.on('error', reject);});
@@ -92,16 +92,26 @@ test('VSIX inspection enforces normalized manifest, version, required contents a
   }
 });
 
-function mockGitHub({tag = null, release = null, corruptUpload = false, corruptDownload = false, publishOnUpload = false} = {}) {
+function mockGitHub({tag = null, release = null, corruptUpload = false, corruptDownload = false, publishOnUpload = false, tagAfterCreate, tagAfterUpload, tagOnReady} = {}) {
+  if (release) release = {html_url: `https://github.com/${repository}/releases/tag/${identity.tag}`, ...release};
   const calls = [], bytes = new Map(); let next = 10;
   const copy = value => value && structuredClone(value);
   const api = async (method, route, body) => {
     calls.push({method, route, body});
     if (method === 'GET' && route.startsWith('/git/ref/tags/')) return copy(tag);
-    if (method === 'POST' && route === '/git/refs') {tag = {ref: body.ref, object: {type: 'commit', sha: body.sha}};return copy(tag);}
+    if (method === 'POST' && route === '/git/refs') {
+      const created = {ref: body.ref, object: {type: 'commit', sha: body.sha}};
+      tag = tagAfterCreate === undefined ? created : copy(tagAfterCreate);
+      return copy(created);
+    }
     if (method === 'GET' && (route.startsWith('/releases/tags/') || route === '/releases/1')) return copy(release);
-    if (method === 'POST' && route === '/releases') {release = {...body, id: 1, assets: [], html_url: `https://github.com/${repository}/releases/tag/${identity.tag}`};return copy(release);}
-    if (method === 'PATCH' && route === '/releases/1') {Object.assign(release, body);return copy(release);}
+    // GitHub may retain a branch name here when an existing tag determines the source.
+    if (method === 'POST' && route === '/releases') {release = {...body, target_commitish: 'main', id: 1, assets: [], html_url: `https://github.com/${repository}/releases/tag/${identity.tag}`};return copy(release);}
+    if (method === 'PATCH' && route === '/releases/1') {
+      Object.assign(release, body);
+      if (body.body === 'Completed release notes' && tagOnReady !== undefined) tag = copy(tagOnReady);
+      return copy(release);
+    }
     if (method === 'DELETE' && route.startsWith('/releases/assets/')) {release.assets = release.assets.filter(a => a.id !== Number(route.split('/').at(-1)));return null;}
     throw new Error('Unexpected mocked request ' + method + ' ' + route);
   };
@@ -110,6 +120,7 @@ function mockGitHub({tag = null, release = null, corruptUpload = false, corruptD
     const row = {id: next++, name: asset.name, size: asset.bytes.length, digest: 'sha256:' + (corruptUpload ? '0'.repeat(64) : hash(asset.bytes)), state: 'uploaded'};
     bytes.set(row.id, asset.bytes); release.assets.push(row);
     if (publishOnUpload) {release.draft = false; release.published_at = '2026-10-22T12:00:00Z';}
+    if (tagAfterUpload !== undefined) tag = copy(tagAfterUpload);
     return copy(row);
   };
   const download = async id => corruptDownload ? Buffer.from('corrupted') : bytes.get(id);
@@ -117,9 +128,10 @@ function mockGitHub({tag = null, release = null, corruptUpload = false, corruptD
 }
 const options = client => ({...client, identity, context, notes: 'Completed release notes', assets});
 
-test('draft creation verifies assets and same-commit reruns reuse or refresh a draft', async () => {
+test('draft creation and same-commit refresh use the tag despite target_commitish being main', async () => {
   const client = mockGitHub();
   const first = await prepareDraft(options(client)); assert.equal(first.draft, true); assert.equal(first.body, 'Completed release notes');
+  assert.equal(first.target_commitish, 'main');
   assert.equal(first.assets.length, 3); assert.equal(client.calls.filter(c => c.method === 'UPLOAD').length, 3);
   await prepareDraft(options(client)); assert.equal(client.calls.filter(c => c.method === 'UPLOAD').length, 3);
   const changed = assets.map((asset, index) => index === 2 ? {...asset, bytes: Buffer.from('new provenance for same source')} : asset);
@@ -129,15 +141,58 @@ test('draft creation verifies assets and same-commit reruns reuse or refresh a d
   assert.equal(client.calls.filter(c => c.method === 'POST' && c.route === '/git/refs').length, 1);
 });
 
-test('conflicting tags and published, immutable or different-commit drafts fail before mutations', async () => {
+test('conflicting tags and published, immutable or wrongly tagged drafts fail before mutations', async () => {
+  const tag = {ref: 'refs/tags/' + identity.tag, object: {type: 'commit', sha}};
   const draft = {id: 1, draft: true, target_commitish: sha, tag_name: identity.tag, assets: []};
   for (const configuration of [
     {tag: {ref: 'refs/tags/' + identity.tag, object: {type: 'commit', sha: other}}},
-    ...[{draft: false}, {immutable: true}, {published_at: '2026-10-22'}, {target_commitish: other}, {tag_name: 'v0.2.0'}].map(patch => ({release: {...draft, ...patch}}))
+    {release: draft},
+    ...[{draft: false}, {immutable: true}, {published_at: '2026-10-22'}, {tag_name: 'v0.2.0'}, {id: 0}].map(patch => ({tag, release: {...draft, ...patch}}))
   ]) {
     const client = mockGitHub(configuration); await assert.rejects(prepareDraft(options(client)));
     assert.ok(client.calls.every(c => c.method === 'GET'));
   }
+});
+
+test('existing draft source comes only from its verified tag, not unused target metadata', async () => {
+  const tag = {ref: 'refs/tags/' + identity.tag, object: {type: 'commit', sha}};
+  for (const target of ['main', other, undefined]) {
+    const release = {id: 1, draft: true, target_commitish: target, tag_name: identity.tag, assets: []};
+    const client = mockGitHub({tag, release});
+    const ready = await prepareDraft(options(client));
+    assert.equal(ready.body, 'Completed release notes');
+    assert.equal(ready.target_commitish, target);
+    assert.ok(!client.calls.some(c => c.method === 'POST' && c.route === '/git/refs'));
+  }
+});
+
+test('tag disappearance or drift during preparation and final verification cannot report readiness', async () => {
+  const moved = {ref: 'refs/tags/' + identity.tag, object: {type: 'commit', sha: other}};
+  for (const tag of [null, moved]) {
+    const duringUpload = mockGitHub({tagAfterUpload: tag});
+    await assert.rejects(prepareDraft(options(duringUpload)), /missing|different commit/);
+    assert.ok(!duringUpload.calls.some(c => c.method === 'PATCH' && c.body.body === 'Completed release notes'));
+    const finalCheck = mockGitHub({tagOnReady: tag});
+    await assert.rejects(prepareDraft(options(finalCheck)), /missing|different commit/);
+  }
+});
+
+test('newly created tags are verified before any draft is created', async () => {
+  for (const tag of [null, {ref: 'refs/tags/' + identity.tag, object: {type: 'commit', sha: other}}]) {
+    const client = mockGitHub({tagAfterCreate: tag});
+    await assert.rejects(prepareDraft(options(client)), /missing|different commit/);
+    assert.ok(!client.calls.some(c => c.method === 'POST' && c.route === '/releases'));
+  }
+});
+
+test('release diagnostics distinguish missing tags, commit conflicts, tag names and lifecycle failures', async () => {
+  const tag = {ref: 'refs/tags/' + identity.tag, object: {type: 'commit', sha}};
+  const release = {id: 1, draft: true, tag_name: identity.tag, target_commitish: 'main', assets: []};
+  await assert.rejects(prepareDraft(options(mockGitHub({release}))), error => error.message.includes('Required tag ' + identity.tag) && error.message.includes(sha));
+  await assert.rejects(prepareDraft(options(mockGitHub({tag: {...tag, object: {type: 'commit', sha: other}}}))), error => error.message.includes(sha) && error.message.includes(other));
+  await assert.rejects(prepareDraft(options(mockGitHub({tag, release: {...release, tag_name: 'v0.2.0'}}))), error => error.message.includes('Release tag mismatch') && error.message.includes(identity.tag) && error.message.includes('v0.2.0'));
+  await assert.rejects(prepareDraft(options(mockGitHub({tag, release: {...release, draft: false}}))), /published, immutable or not a draft/);
+  await assert.rejects(assertTag(async () => null, identity, sha, {required: true}), /Required tag.*missing/);
 });
 
 test('annotated tags are bounded and must ultimately name the exact source commit', async () => {
