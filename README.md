@@ -6,11 +6,11 @@ file icons, editing assistance, and native compiler integration.
 
 ## Installation
 
-Use **Extensions: Install from VSIX...** and select `vscode-0.1.0.vsix`, then
+Use **Extensions: Install from VSIX...** and select `vscode-0.1.1.vsix`, then
 reload the editor if prompted. You can also install from the command line:
 
 ```sh
-code --install-extension vscode-0.1.0.vsix
+code --install-extension vscode-0.1.1.vsix
 ```
 
 In VSCodium, use `codium` in place of `code`.
@@ -89,7 +89,7 @@ Blocked Intent decisions appear as **needs human**.
 - Text assistance supports documents up to 2 MiB. Import completion examines one
   directory at a time and returns up to 256 suggestions.
 
-Version 0.1.0 provides static completion and import navigation. General semantic
+Version 0.1.1 provides static completion and import navigation. General semantic
 completion, symbol navigation, references, rename, formatting, and debugging are
 not included. Building a program does not run it or generate an Intent implementation.
 
