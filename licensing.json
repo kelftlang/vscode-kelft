@@ -1,0 +1,17 @@
+{
+  "schema": "kelft.licensing/1",
+  "copyright": "Copyright (c) 2026 Kelft contributors",
+  "defaultFirstPartySoftware": "MIT OR Apache-2.0",
+  "rules": [
+    {"paths": ["src/**", "scripts/**", "tests/**", "syntaxes/**", "assets/intrinsics.json", "package.json", "*.yaml", ".github/**"], "license": "MIT OR Apache-2.0", "scope": "first-party extension software, grammar, signatures, and configuration"},
+    {"paths": ["*.md", "docs/**"], "license": "MIT OR Apache-2.0", "scope": "first-party extension documentation"},
+    {"paths": ["snippets/**", "documentation code blocks"], "license": "MIT-0", "scope": "first-party snippets and copyable examples"}
+  ],
+  "exceptions": [
+    {"paths": ["assets/*.png", "assets/*.svg", "assets/provenance.json"], "license": null, "reason": "Brand artwork and provenance follow TRADEMARKS.md."},
+    {"paths": ["node_modules/**", "dist/**", ".package/**", ".vscode-test/**", "*.vsix", "*.vsix.sha256"], "license": null, "reason": "Dependencies and generated artifacts retain the licenses of their included contents."}
+  ],
+  "precedence": "Existing file notices and third-party terms take precedence. Brand exceptions override directory rules. Snippets and documentation code blocks use MIT-0 unless separately identified.",
+  "dependencyInventories": ["pnpm-lock.yaml"],
+  "licenseTexts": ["LICENSE-MIT", "LICENSE-APACHE", "LICENSES/MIT-0.txt"]
+}

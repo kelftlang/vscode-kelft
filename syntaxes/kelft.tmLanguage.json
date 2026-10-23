@@ -1,0 +1,227 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "Kelft",
+  "scopeName": "source.kelft",
+  "fileTypes": [
+    "kelft"
+  ],
+  "patterns": [
+    {
+      "include": "#comments"
+    },
+    {
+      "include": "#intent-module"
+    },
+    {
+      "include": "#core"
+    }
+  ],
+  "repository": {
+    "comments": {
+      "patterns": [
+        {
+          "name": "comment.line.double-slash.kelft",
+          "begin": "//",
+          "end": "$"
+        },
+        {
+          "name": "comment.block.kelft",
+          "begin": "/\\*",
+          "end": "\\*/"
+        }
+      ]
+    },
+    "string": {
+      "name": "string.quoted.double.kelft",
+      "begin": "\"",
+      "end": "\"|(?=$)",
+      "patterns": [
+        {
+          "name": "constant.character.escape.kelft",
+          "match": "\\\\(?:[nrt0\"\\\\]|u\\{[0-9A-Fa-f]{1,6}\\})"
+        },
+        {
+          "name": "invalid.illegal.escape.kelft",
+          "match": "\\\\."
+        }
+      ]
+    },
+    "multiline": {
+      "name": "string.quoted.triple.kelft",
+      "begin": "\"\"\"",
+      "end": "\"\"\""
+    },
+    "core": {
+      "patterns": [
+        {
+          "include": "#comments"
+        },
+        {
+          "include": "#string"
+        },
+        {
+          "name": "constant.language.boolean.kelft",
+          "match": "\\b(?:true|false)\\b"
+        },
+        {
+          "name": "keyword.control.kelft",
+          "match": "\\b(?:fn|let|mut|struct|enum|match|if|else|while|for|in|return|break|continue|pub|import|as|type|inout)\\b"
+        },
+        {
+          "name": "storage.type.kelft",
+          "match": "\\b(?:i32|u8|bool|string|void|Array|Map|Option|Result|String|Vec|Bytes)\\b"
+        },
+        {
+          "name": "entity.name.function.kelft",
+          "match": "\\b[A-Za-z_][A-Za-z_0-9]*(?=\\s*(?:::\\s*<[^;{}]*>)?\\s*\\()"
+        },
+        {
+          "name": "entity.name.type.kelft",
+          "match": "\\b[A-Z][A-Za-z_0-9]*\\b"
+        },
+        {
+          "name": "invalid.illegal.numeric.kelft",
+          "match": "\\b0[0-9]+\\b"
+        },
+        {
+          "name": "constant.numeric.decimal.kelft",
+          "match": "\\b(?:0|[1-9][0-9]*)\\b"
+        },
+        {
+          "name": "keyword.operator.kelft",
+          "match": ">>>|::|->|=>|==|!=|<=|>=|&&|\\|\\||<<|>>|[+*/%<>=!&|^~\\-]"
+        },
+        {
+          "name": "punctuation.section.kelft",
+          "match": "[{}()\\[\\]]"
+        },
+        {
+          "name": "punctuation.separator.kelft",
+          "match": "[;,:.]"
+        }
+      ]
+    },
+    "intent-module": {
+      "name": "meta.intent.kelft",
+      "begin": "\\b(app)(?=\\s+[A-Za-z_][A-Za-z_0-9]*\\s*\\{)",
+      "beginCaptures": {
+        "1": {
+          "name": "keyword.declaration.intent.kelft"
+        }
+      },
+      "end": "\\z",
+      "patterns": [
+        {
+          "include": "#intent"
+        }
+      ]
+    },
+    "intent": {
+      "patterns": [
+        {
+          "include": "#comments"
+        },
+        {
+          "include": "#multiline"
+        },
+        {
+          "include": "#string"
+        },
+        {
+          "include": "#intent-clause"
+        },
+        {
+          "name": "keyword.declaration.intent.kelft",
+          "match": "\\b(?:context|entity|behavior|endpoint|scenario|reference|feature|unknown|build|change|capability|roles|when)\\b"
+        },
+        {
+          "name": "variable.other.property.kelft",
+          "match": "\\b[A-Za-z_][A-Za-z_0-9]*(?=\\s*:(?!:))"
+        },
+        {
+          "include": "#intent-block"
+        },
+        {
+          "include": "#formal"
+        },
+        {
+          "name": "storage.type.intent.kelft",
+          "match": "\\b(?:Text|UUID|i32|u8|bool|void|Array|Map|Option|Result|string)\\b"
+        },
+        {
+          "name": "punctuation.separator.kelft",
+          "match": "[;,:]"
+        }
+      ]
+    },
+    "intent-block": {
+      "name": "meta.block.intent.kelft",
+      "begin": "\\{",
+      "end": "\\}",
+      "patterns": [
+        {
+          "include": "#intent"
+        }
+      ]
+    },
+    "intent-clause": {
+      "name": "meta.clause.intent.kelft",
+      "begin": "\\b(intent|must|ensures|prefer|may|given|and|then|eventually|source|applies|decision|because|image|match|allow|deny|ask|blocks|use|implementation|ownership|preserve|evolve|require|verify|target|agent|tool|method|path|request|response|status|error|extensible)\\b",
+      "beginCaptures": {
+        "1": {
+          "name": "keyword.control.intent.kelft"
+        }
+      },
+      "end": "(?=;|\\}|$)",
+      "patterns": [
+        {
+          "include": "#comments"
+        },
+        {
+          "include": "#multiline"
+        },
+        {
+          "include": "#string"
+        },
+        {
+          "include": "#formal"
+        },
+        {
+          "name": "entity.name.label.intent.kelft",
+          "match": "\\b[A-Za-z_][A-Za-z_0-9]*\\s*:(?!:)"
+        }
+      ]
+    },
+    "formal": {
+      "name": "meta.expression.formal.kelft",
+      "begin": "\\(",
+      "end": "\\)",
+      "patterns": [
+        {
+          "include": "#formal"
+        },
+        {
+          "include": "#formal-braces"
+        },
+        {
+          "include": "#core"
+        }
+      ]
+    },
+    "formal-braces": {
+      "begin": "\\{",
+      "end": "\\}",
+      "patterns": [
+        {
+          "include": "#formal-braces"
+        },
+        {
+          "include": "#formal"
+        },
+        {
+          "include": "#core"
+        }
+      ]
+    }
+  }
+}

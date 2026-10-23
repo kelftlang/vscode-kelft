@@ -1,0 +1,52 @@
+{
+  "name": "@kelftlang/vscode",
+  "displayName": "Kelft",
+  "description": "Kelft icons, Core and Intent editing, static completion, native checks, and builds.",
+  "version": "0.1.0",
+  "publisher": "kelftlang",
+  "license": "(MIT OR Apache-2.0)",
+  "repository": {"type": "git", "url": "https://github.com/kelftlang/vscode-kelft.git"},
+  "homepage": "https://www.kelft.com",
+  "bugs": {"url": "https://github.com/kelftlang/vscode-kelft/issues"},
+  "engines": {"vscode": "^1.100.0"},
+  "packageManager": "pnpm@11.19.0",
+  "categories": ["Programming Languages", "Linters"],
+  "keywords": ["kelft", "intent", "compiler"],
+  "icon": "assets/icon.png",
+  "main": "./dist/extension.cjs",
+  "extensionKind": ["workspace"],
+  "activationEvents": ["onLanguage:kelft"],
+  "capabilities": {
+    "untrustedWorkspaces": {"supported": "limited", "description": "Syntax support is available. Native compiler commands require a trusted workspace.", "restrictedConfigurations": ["kelft.compilerPath", "kelft.projectRoot", "kelft.buildOutputDirectory"]},
+    "virtualWorkspaces": {"supported": "limited", "description": "Syntax support is available; compiler commands require local files on the extension host."}
+  },
+  "contributes": {
+    "languages": [{"id": "kelft", "aliases": ["Kelft", "kelft"], "extensions": [".kelft"], "configuration": "./language-configuration.json", "icon": {"light": "./assets/kelft-icon-light.svg", "dark": "./assets/kelft-icon-dark.svg"}}],
+    "grammars": [{"language": "kelft", "scopeName": "source.kelft", "path": "./syntaxes/kelft.tmLanguage.json"}],
+    "snippets": [{"language": "kelft", "path": "./snippets/kelft.json"}],
+    "commands": [{"command": "kelft.checkFile", "title": "Kelft: Check File", "enablement": "isWorkspaceTrusted && resourceLangId == kelft && resourceScheme == file"}, {"command": "kelft.buildFile", "title": "Kelft: Build File", "enablement": "isWorkspaceTrusted && resourceLangId == kelft && resourceScheme == file"}],
+    "configuration": {
+      "title": "Kelft",
+      "properties": {
+        "kelft.compilerPath": {"type": "string", "default": "kelft", "scope": "machine-overridable", "description": "Native Kelft executable, as a path or PATH command name. No shell command or extra arguments."},
+        "kelft.projectRoot": {"type": "string", "default": "", "scope": "resource", "description": "Project root, absolute or relative to the containing workspace folder. Empty uses that folder."},
+        "kelft.checkOnSave": {"type": "boolean", "default": true, "scope": "resource", "description": "Check saved Kelft files when opened or saved in a trusted workspace."},
+        "kelft.checkTimeoutMs": {"type": "integer", "default": 60000, "minimum": 1000, "maximum": 600000, "scope": "resource", "description": "Native check timeout in milliseconds."},
+        "kelft.buildOutputDirectory": {"type": "string", "default": "build/vscode", "scope": "resource", "description": "Build output directory relative to the project root. Must stay inside the project."}
+      }
+    }
+  },
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "test": "node scripts/build.mjs && node --test tests/*.test.mjs",
+    "test:editor": "node scripts/test-editor.mjs",
+    "package": "node scripts/package.mjs",
+    "vscode:prepublish": "node scripts/build.mjs"
+  },
+  "devDependencies": {
+    "esbuild": "0.28.2",
+    "vscode-textmate": "9.2.0",
+    "vscode-oniguruma": "2.0.1",
+    "@vscode/vsce": "3.6.2"
+  }
+}

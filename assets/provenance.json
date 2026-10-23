@@ -1,0 +1,18 @@
+{
+  "repository": "kelftlang/kelft-branding",
+  "path": "png/app-icon-128.png",
+  "sha256": "b4b16ee0bbbed9f77412d41e05f46e49f0e0798282bcc98d5c19c369f4adf6e5",
+  "terms": "Official brand identification only; see TRADEMARKS.md. No font software is included.",
+  "fileIcons": [
+    {
+      "path": "svg/icon/kelft-icon-light.svg",
+      "asset": "assets/kelft-icon-light.svg",
+      "sha256": "6c582f4adff36670b7ceeceec0e6ddf78871c281cfb58bb8dc4e5ddd4012c53f"
+    },
+    {
+      "path": "svg/icon/kelft-icon-dark.svg",
+      "asset": "assets/kelft-icon-dark.svg",
+      "sha256": "5115ffcf5a062dd1256fb636bcf434218d8f5d0acda4d6e8610104b7625a743d"
+    }
+  ]
+}
