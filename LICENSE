@@ -1,0 +1,16 @@
+Kelft for VS Code licensing
+==========================
+
+Copyright (c) 2026 Kelft contributors.
+
+Except where otherwise identified, the extension's first-party software,
+grammar, and documentation are available under either the MIT license
+(LICENSE-MIT) or the Apache License, Version 2.0 (LICENSE-APACHE), at your option.
+SPDX-License-Identifier: MIT OR Apache-2.0.
+
+Snippets and copyable examples, including code blocks in documentation, use MIT-0
+(LICENSES/MIT-0.txt), unless separately identified.
+
+Third-party material retains its own terms. Brand artwork and marks follow
+TRADEMARKS.md and asset provenance. These licenses do not grant trademark rights.
+See licensing.json, docs/licensing.md, and THIRD-PARTY-NOTICES.md.

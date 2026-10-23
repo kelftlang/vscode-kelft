@@ -1,0 +1,14 @@
+src/**
+tests/**
+scripts/**
+node_modules/**
+.github/**
+pnpm-lock.yaml
+pnpm-workspace.yaml
+.gitignore
+.gitattributes
+.publication.json
+*.vsix
+*.vsix.sha256
+.package/**
+.release/**

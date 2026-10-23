@@ -1,0 +1,52 @@
+name: Prepare release
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: prepare-release-${{ github.repository }}
+  cancel-in-progress: false
+jobs:
+  prepare:
+    if: github.repository == 'kelftlang/vscode-kelft' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    permissions:
+      contents: write
+      attestations: write
+      id-token: write
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
+        with:
+          node-version: '24'
+          package-manager-cache: false
+      - uses: pnpm/action-setup@a8198c4bff370c8506180b035930dea56dbd5288 # v5
+      - run: pnpm install --frozen-lockfile --ignore-scripts
+      - name: Verify source signature and release prerequisites
+        id: source
+        run: node scripts/release.mjs preflight
+        env:
+          GH_TOKEN: ${{ github.token }}
+      - run: pnpm test
+      - run: pnpm package
+      - name: Inspect packaged extension
+        run: node scripts/release.mjs inspect
+        env:
+          GH_TOKEN: ${{ github.token }}
+      - name: Attest extension and checksum
+        id: provenance
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4
+        with:
+          subject-path: |
+            ${{ steps.source.outputs.file }}
+            ${{ steps.source.outputs.checksum }}
+      - name: Verify provenance and prepare draft with assets
+        run: node scripts/release.mjs draft
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ATTESTATION_BUNDLE: ${{ steps.provenance.outputs.bundle-path }}
+          ATTESTATION_URL: ${{ steps.provenance.outputs.attestation-url }}

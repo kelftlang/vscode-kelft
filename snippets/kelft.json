@@ -1,0 +1,7 @@
+{
+  "Core main": {"prefix": "main", "body": ["fn main() -> void {", "    ${0}", "}"], "description": "Core program entry point"},
+  "Core function": {"prefix": "fn", "body": ["fn ${1:name}(${2}) -> ${3:void} {", "    ${0}", "}"], "description": "Explicitly typed Core function"},
+  "Relative import": {"prefix": "import", "body": ["import \"./${1:module}.kelft\" as ${2:module};"], "description": "Relative module import with an explicit alias"},
+  "Intent application": {"prefix": "app", "body": ["app ${1:Example} {", "    intent \"${2:Describe the desired outcome}\"", "    must ${3:Describe a required behavior}", "    ${0}", "}"], "description": "Intent declarations; requirements still need verification"},
+  "Intent behavior": {"prefix": "behavior", "body": ["behavior ${1:action}(${2:input}: ${3:Text}) -> ${4:Text} {", "    intent \"${5:Describe this behavior}\"", "    ${0}", "}"], "description": "Typed Intent behavior"}
+}
