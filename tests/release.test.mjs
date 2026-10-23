@@ -7,7 +7,7 @@ import {createHash} from 'node:crypto';
 import {createRequire} from 'node:module';
 import {packageManifest} from '../scripts/package-stage.mjs';
 import {releaseIdentity, releaseContext, changelogSection, githubSignature, verifyGitHubKey,
-  assertTag, attestationArgs, releaseNotes, prepareDraft, inspectVSIX, githubClient, repository, workflow} from '../scripts/release.mjs';
+  assertTag, existingRelease, attestationArgs, releaseNotes, prepareDraft, inspectVSIX, githubClient, repository, workflow} from '../scripts/release.mjs';
 
 const require = createRequire(import.meta.url);
 const yazl = createRequire(require.resolve('@vscode/vsce/package.json'))('yazl');
@@ -21,14 +21,14 @@ const env = {GITHUB_REPOSITORY: repository, GITHUB_SERVER_URL: 'https://github.c
   GITHUB_REF: 'refs/heads/main', GITHUB_SHA: sha, GITHUB_RUN_ID: '123', GITHUB_RUN_ATTEMPT: '1'};
 
 test('release identity, exact manual main source, and one matching changelog section are mandatory', () => {
-  assert.equal(identity.tag, 'v0.1.1'); assert.equal(identity.title, 'Kelft for VS Code v0.1.1');
-  assert.equal(identity.file, 'vscode-0.1.1.vsix'); assert.equal(identity.prerelease, false);
+  assert.equal(identity.tag, 'v0.1.2'); assert.equal(identity.title, 'Kelft for VS Code v0.1.2');
+  assert.equal(identity.file, 'vscode-0.1.2.vsix'); assert.equal(identity.prerelease, false);
   assert.equal(releaseIdentity({...source, version: '0.2.0-beta.1'}).prerelease, true);
   for (const patch of [{name: 'vscode'}, {publisher: 'other'}, {version: '01.0.0'}]) assert.throws(() => releaseIdentity({...source, ...patch}));
   assert.deepEqual(releaseContext(env), context);
   for (const patch of [{GITHUB_REF: 'refs/heads/dev'}, {GITHUB_EVENT_NAME: 'push'}, {GITHUB_SHA: 'main'}, {GITHUB_REPOSITORY: 'other/repo'}, {GITHUB_RUN_ATTEMPT: ''}]) assert.throws(() => releaseContext({...env, ...patch}));
-  assert.equal(changelogSection('# Changes\r\n\r\n## 0.1.1\r\n\r\n- New features.\r\n\r\n## 0.0.1\r\nOlder', '0.1.1'), '- New features.');
-  for (const text of ['## 0.2.0\nMissing', '## 0.1.1\n', '## 0.1.1\nFirst\n## 0.1.1\nDuplicate']) assert.throws(() => changelogSection(text, '0.1.1'), /section/);
+  assert.equal(changelogSection('# Changes\r\n\r\n## 0.1.2\r\n\r\n- New features.\r\n\r\n## 0.0.1\r\nOlder', '0.1.2'), '- New features.');
+  for (const text of ['## 0.2.0\nMissing', '## 0.1.2\n', '## 0.1.2\nFirst\n## 0.1.2\nDuplicate']) assert.throws(() => changelogSection(text, '0.1.2'), /section/);
 });
 
 test('source signature rejects unsigned, invalid and differently signed commits', () => {
@@ -69,7 +69,7 @@ async function zipFixture(t, mutate = () => {}) {
   const rows = new Map(['LICENSE.txt','LICENSE-MIT','LICENSE-APACHE','LICENSES/MIT-0.txt','THIRD-PARTY-NOTICES.md','readme.md','changelog.md','docs/licensing.md','docs/releasing.md','licensing.json','dist/extension.cjs',
     'assets/icon.png','assets/intrinsics.json','assets/kelft-icon-light.svg','assets/kelft-icon-dark.svg','syntaxes/kelft.tmLanguage.json','snippets/kelft.json'].map(name => ['extension/' + name, 'fixture']));
   rows.set('extension/package.json', JSON.stringify(packageManifest(source)));
-  rows.set('extension.vsixmanifest', '<Identity Id="vscode" Version="0.1.1" Publisher="kelftlang" />');
+  rows.set('extension.vsixmanifest', '<Identity Id="vscode" Version="0.1.2" Publisher="kelftlang" />');
   mutate(rows);
   const zip = new yazl.ZipFile(), chunks = [];
   const complete = new Promise((resolve, reject) => {zip.outputStream.on('data', bytes => chunks.push(bytes));zip.outputStream.on('end', resolve);zip.outputStream.on('error', reject);});
@@ -92,7 +92,7 @@ test('VSIX inspection enforces normalized manifest, version, required contents a
   }
 });
 
-function mockGitHub({tag = null, release = null, corruptUpload = false, corruptDownload = false, publishOnUpload = false, tagAfterCreate, tagAfterUpload, tagOnReady} = {}) {
+function mockGitHub({tag = null, release = null, corruptUpload = false, corruptDownload = false, publishOnUpload = false, tagAfterCreate, tagAfterUpload, tagOnReady, tagLookupMissing = false, releasePages, listingError, patchResponse, patchReadback} = {}) {
   if (release) release = {html_url: `https://github.com/${repository}/releases/tag/${identity.tag}`, ...release};
   const calls = [], bytes = new Map(); let next = 10;
   const copy = value => value && structuredClone(value);
@@ -104,13 +104,22 @@ function mockGitHub({tag = null, release = null, corruptUpload = false, corruptD
       tag = tagAfterCreate === undefined ? created : copy(tagAfterCreate);
       return copy(created);
     }
-    if (method === 'GET' && (route.startsWith('/releases/tags/') || route === '/releases/1')) return copy(release);
+    if (method === 'GET' && route.startsWith('/releases/tags/')) return tagLookupMissing ? null : copy(release);
+    if (method === 'GET' && route === '/releases/1') return copy(release);
+    if (method === 'GET' && route.startsWith('/releases?')) {
+      if (listingError) throw new Error(listingError);
+      const page = Number(new URLSearchParams(route.split('?')[1]).get('page'));
+      return releasePages ? copy(releasePages[page - 1] ?? []) : release ? [copy(release)] : [];
+    }
     // GitHub may retain a branch name here when an existing tag determines the source.
     if (method === 'POST' && route === '/releases') {release = {...body, target_commitish: 'main', id: 1, assets: [], html_url: `https://github.com/${repository}/releases/tag/${identity.tag}`};return copy(release);}
     if (method === 'PATCH' && route === '/releases/1') {
-      Object.assign(release, body);
+      // GitHub drops a draft's tag association if an update omits tag_name.
+      Object.assign(release, body, {tag_name: body.tag_name ?? 'untagged-01e1fcbb027e1701ab94'});
       if (body.body === 'Completed release notes' && tagOnReady !== undefined) tag = copy(tagOnReady);
-      return copy(release);
+      const response = {...copy(release), ...(typeof patchResponse === 'function' ? patchResponse(body) : patchResponse)};
+      if (patchReadback) Object.assign(release, typeof patchReadback === 'function' ? patchReadback(body) : patchReadback);
+      return response;
     }
     if (method === 'DELETE' && route.startsWith('/releases/assets/')) {release.assets = release.assets.filter(a => a.id !== Number(route.split('/').at(-1)));return null;}
     throw new Error('Unexpected mocked request ' + method + ' ' + route);
@@ -139,6 +148,79 @@ test('draft creation and same-commit refresh use the tag despite target_commitis
   assert.equal(client.calls.filter(c => c.method === 'UPLOAD').length, 4);
   assert.equal(client.calls.filter(c => c.method === 'DELETE').length, 1);
   assert.equal(client.calls.filter(c => c.method === 'POST' && c.route === '/git/refs').length, 1);
+  assert.ok(client.calls.filter(c => c.method === 'PATCH').every(c => c.body.tag_name === identity.tag && c.body.draft === true));
+  assert.equal(client.current().id, first.id);
+  assert.equal(client.current().tag_name, identity.tag);
+});
+
+test('a 404 tag lookup falls back to authenticated listings and refreshes the same draft ID', async () => {
+  const client = mockGitHub({tagLookupMissing: true});
+  const first = await prepareDraft(options(client));
+  const second = await prepareDraft(options(client));
+  assert.equal(second.id, first.id); assert.equal(second.tag_name, identity.tag);
+  assert.equal(client.calls.filter(c => c.method === 'POST' && c.route === '/releases').length, 1);
+  assert.equal(client.calls.filter(c => c.method === 'UPLOAD').length, 3);
+  assert.ok(client.calls.some(c => c.route === '/releases?per_page=100&page=1'));
+});
+
+test('draft listing fallback traverses pages and matches the exact tag, not title or untagged slugs', async () => {
+  const tag = {ref: 'refs/tags/' + identity.tag, object: {type: 'commit', sha}};
+  const release = {id: 1, draft: true, tag_name: identity.tag, target_commitish: 'main', assets: []};
+  const unrelated = Array.from({length: 100}, (_, index) => ({id: index + 10, draft: true, tag_name: 'untagged-' + index, name: identity.title}));
+  const client = mockGitHub({tag, release, tagLookupMissing: true, releasePages: [unrelated, [release]]});
+  const ready = await prepareDraft(options(client));
+  assert.equal(ready.id, 1);
+  assert.ok(client.calls.some(c => c.route === '/releases?per_page=100&page=2'));
+  assert.ok(!client.calls.some(c => c.method === 'POST'));
+  const absent = mockGitHub({tag, tagLookupMissing: true, releasePages: [unrelated, []]});
+  assert.equal(await existingRelease(absent.api, identity, sha), null);
+  assert.ok(absent.calls.every(c => c.method === 'GET'));
+});
+
+test('listing fallback rejects duplicate tags, incomplete searches and malformed responses before mutations', async () => {
+  const release = {id: 1, draft: true, tag_name: identity.tag, target_commitish: 'main', assets: []};
+  const filler = Array.from({length: 100}, (_, index) => ({id: index + 10, tag_name: 'other-' + index}));
+  const duplicateFirstPage = [release, ...filler.slice(1)];
+  for (const [pages, message] of [
+    [[duplicateFirstPage, [{...release, id: 2}]], /Multiple releases/],
+    [Array.from({length: 10}, () => filler), /exceeded 10 pages/],
+    [[{unexpected: 'object'}], /Invalid release listing/],
+    [[Array.from({length: 101}, (_, index) => ({tag_name: 'other-' + index}))], /Invalid release listing/]
+  ]) {
+    const client = mockGitHub({tagLookupMissing: true, releasePages: pages});
+    await assert.rejects(prepareDraft(options(client)), message);
+    assert.ok(client.calls.every(c => c.method === 'GET'));
+    assert.ok(client.calls.filter(c => c.route.startsWith('/releases?')).length <= 10);
+  }
+});
+
+test('lookup permission failures and listed published releases cannot become new drafts', async () => {
+  const tag = {ref: 'refs/tags/' + identity.tag, object: {type: 'commit', sha}};
+  const denied = mockGitHub({tagLookupMissing: true, listingError: 'GitHub API request failed with status 403'});
+  await assert.rejects(prepareDraft(options(denied)), /403/);
+  assert.ok(denied.calls.every(c => c.method === 'GET'));
+  for (const lifecycle of [{draft: false}, {draft: true, immutable: true}]) {
+    const release = {id: 1, tag_name: identity.tag, ...lifecycle};
+    const client = mockGitHub({tag, release, tagLookupMissing: true});
+    await assert.rejects(prepareDraft(options(client)), /published, immutable or not a draft/);
+    assert.ok(client.calls.every(c => c.method === 'GET'));
+  }
+  const direct = mockGitHub({tag, release: {id: 1, draft: true, tag_name: identity.tag, assets: []}, listingError: 'Must not list after a successful lookup'});
+  assert.equal((await prepareDraft(options(direct))).id, 1);
+  assert.ok(!direct.calls.some(c => c.route?.startsWith('/releases?')));
+});
+
+test('both draft update responses and readbacks must retain ID, lifecycle and tag association', async () => {
+  for (const field of ['patchResponse', 'patchReadback']) {
+    for (const phase of ['progress', 'ready']) {
+      for (const invalid of [{id: 2}, {tag_name: 'untagged-unrelated'}, {draft: false}, {immutable: true}]) {
+        const inject = body => (body.body === 'Completed release notes') === (phase === 'ready') ? invalid : {};
+        const client = mockGitHub({[field]: inject});
+        await assert.rejects(prepareDraft(options(client)), /ID mismatch|tag mismatch|published, immutable or not a draft/);
+        assert.ok(client.calls.filter(c => c.method === 'PATCH').every(c => c.body.tag_name === identity.tag && c.body.draft === true));
+      }
+    }
+  }
 });
 
 test('conflicting tags and published, immutable or wrongly tagged drafts fail before mutations', async () => {

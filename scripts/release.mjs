@@ -107,7 +107,20 @@ export async function assertTag(api, identity, sha, {required = false} = {}) {
 
 export async function existingRelease(api, identity, sha) {
   const ref = await assertTag(api, identity, sha);
-  const release = await api('GET', '/releases/tags/' + encodeURIComponent(identity.tag), undefined, {missing: true});
+  let release = await api('GET', '/releases/tags/' + encodeURIComponent(identity.tag), undefined, {missing: true});
+  if (!release) {
+    const matches = [];
+    let complete = false;
+    for (let page = 1; page <= 10; page++) {
+      const releases = await api('GET', `/releases?per_page=100&page=${page}`);
+      check(Array.isArray(releases) && releases.length <= 100, 'Invalid release listing response.');
+      matches.push(...releases.filter(row => row?.tag_name === identity.tag));
+      check(matches.length <= 1, `Multiple releases match ${identity.tag}; refusing an ambiguous draft refresh.`);
+      if (releases.length < 100) {complete = true;break;}
+    }
+    check(complete, 'Release lookup exceeded 10 pages; refusing to prepare a draft without a complete search.');
+    release = matches[0] ?? null;
+  }
   if (release) {
     assertDraft(release, identity);
     check(ref, `Required tag ${identity.tag} is missing; existing draft ${release.id} cannot be bound to expected commit ${sha}.`);
@@ -163,14 +176,24 @@ export async function prepareDraft({api, upload, download, identity, context, no
   await assertTag(api, identity, context.sha, {required: true});
   if (!release) release = await api('POST', '/releases', {tag_name: identity.tag, target_commitish: context.sha, name: identity.title, body: 'Release preparation is running. Review the completed Actions summary before publishing.', draft: true, prerelease: identity.prerelease});
   assertDraft(release, identity);
+  const validateDraft = current => {
+    assertDraft(current, identity);
+    check(current.id === release.id, `Release ID mismatch: expected ${release.id}, received ${current.id}.`);
+    return current;
+  };
   const getDraft = async () => {
     await assertTag(api, identity, context.sha, {required: true});
     const current = await api('GET', '/releases/' + release.id);
-    assertDraft(current, identity);return current;
+    return validateDraft(current);
+  };
+  const updateDraft = async fields => {
+    await getDraft();
+    // GitHub removes the tag association when a draft update omits tag_name.
+    validateDraft(await api('PATCH', '/releases/' + release.id, {...fields, tag_name: identity.tag, draft: true}));
+    return getDraft();
   };
   // A failed refresh cannot leave a previously successful readiness notice.
-  await getDraft();
-  await api('PATCH', '/releases/' + release.id, {body: 'Release preparation is running. Review the completed Actions summary before publishing.', draft: true});
+  await updateDraft({body: 'Release preparation is running. Review the completed Actions summary before publishing.'});
   for (const asset of assets) {
     const current = await getDraft();
     const previous = current.assets?.filter(row => row.name === asset.name) ?? [];
@@ -193,10 +216,7 @@ export async function prepareDraft({api, upload, download, identity, context, no
     check(remote.digest === 'sha256:' + digest(asset.bytes) && remote.state === 'uploaded', 'Release asset metadata failed verification.');
     check(digest(await download(remote.id)) === digest(asset.bytes), 'Downloaded release asset failed verification: ' + asset.name);
   }
-  await getDraft();
-  const ready = await api('PATCH', '/releases/' + release.id, {name: identity.title, body: notes, draft: true, prerelease: identity.prerelease});
-  assertDraft(ready, identity);
-  await assertTag(api, identity, context.sha, {required: true});
+  const ready = await updateDraft({name: identity.title, body: notes, prerelease: identity.prerelease});
   check(ready.html_url?.startsWith(`https://github.com/${repository}/releases/`), 'Unexpected draft URL.');
   return ready;
 }

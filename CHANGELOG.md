@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.1.1
+## 0.1.2
 
 Initial release of Kelft for VS Code and compatible editors.
 
