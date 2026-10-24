@@ -3,8 +3,8 @@ const fs=require('node:fs');
 const path=require('node:path');
 const vscode=require('vscode');
 exports.run=async()=>{
-  const extension=vscode.extensions.getExtension('kelftlang.vscode');assert.ok(extension,'Packaged extension is installed in the development host.');
-  assert.equal(extension.packageJSON.name,'vscode');assert.equal(extension.packageJSON.publisher,'kelftlang');assert.equal(extension.packageJSON.version,'0.1.2');
+  const extension=vscode.extensions.getExtension('kelftlang.vscode-kelft');assert.ok(extension,'Packaged extension is installed in the development host.');
+  assert.equal(extension.packageJSON.name,'vscode-kelft');assert.equal(extension.packageJSON.publisher,'kelftlang');assert.equal(extension.packageJSON.version,'0.1.3');
   await extension.activate();
   assert.ok((await vscode.languages.getLanguages()).includes('kelft'));
   const commands=await vscode.commands.getCommands();assert.ok(commands.includes('kelft.checkFile'));assert.ok(commands.includes('kelft.buildFile'));

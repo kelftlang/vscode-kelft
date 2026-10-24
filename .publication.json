@@ -1,7 +1,7 @@
 {
   "schema": "kelft.public-export/1",
   "kind": "extension",
-  "sourceRevision": "afd234fa373f592298242dfb96a5cb65a8d01af2",
+  "sourceRevision": "b9645154c6950fe3b5f68436c01b55ba25c711ff",
   "sourceDirty": true,
   "publication": "prepared-not-published",
   "files": [
@@ -14,6 +14,11 @@
       "path": ".github/workflows/extension.yml",
       "sha256": "sha256:03947978aa1e96e00ebfd21e4f3745ea4bb73ebfe6f0db7f25f86f0239b99aad",
       "bytes": 748
+    },
+    {
+      "path": ".github/workflows/marketplaces.yml",
+      "sha256": "sha256:e68eb01005f4597a6e856707a05b7ddc4ce4137cf4d7f32777f12148987a0dce",
+      "bytes": 2218
     },
     {
       "path": ".github/workflows/release.yml",
@@ -32,13 +37,13 @@
     },
     {
       "path": "CHANGELOG.md",
-      "sha256": "sha256:58d2aa0905ba7d6b40056486c1fa44e81241b4586fab0532fa5cc1d5c043e51c",
-      "bytes": 746
+      "sha256": "sha256:7e4df7166c32392e53ec111fc18579fd75a80e0b8e93e24111ea418710f3ff6d",
+      "bytes": 1257
     },
     {
       "path": "CONTRIBUTING.md",
-      "sha256": "sha256:b697099408f5ea659c2eedc4227060c49bedcf75cc01f8100d41f12751f8f688",
-      "bytes": 2349
+      "sha256": "sha256:9cfe14fb1ece8b1a82fe2f21c0298748414c3c9c4218911a8f2b87732a7d9912",
+      "bytes": 2479
     },
     {
       "path": "DCO",
@@ -67,8 +72,8 @@
     },
     {
       "path": "README.md",
-      "sha256": "sha256:ecda791d803d4640d0f0c50c4d0afb82c2d219d2c6df6eae4b93b339a9c792f2",
-      "bytes": 5330
+      "sha256": "sha256:ecc2b1fe1311c475697a8d1902275008c71fb7ac1a6b52e0157cfa8f1c6bc529",
+      "bytes": 5658
     },
     {
       "path": "THIRD-PARTY-NOTICES.md",
@@ -112,8 +117,8 @@
     },
     {
       "path": "docs/releasing.md",
-      "sha256": "sha256:4d8990a45f269e79fe92316d7ace22909ce09161d53fc3cedfedb5e8910de0ba",
-      "bytes": 7180
+      "sha256": "sha256:44967404c1c96e3743aeed1177adaf23f31d8d45f10732c07bf07c7f76187133",
+      "bytes": 11049
     },
     {
       "path": "language-configuration.json",
@@ -127,13 +132,13 @@
     },
     {
       "path": "package.json",
-      "sha256": "sha256:aa51528375ace5a865ff5c08919f618f303212faa8684b1ee9666f6724a871ad",
-      "bytes": 3450
+      "sha256": "sha256:60bb73efa83151d1fd6f5dc724e5d408144db1ae7de480b1eb8574fcd0b4b403",
+      "bytes": 3489
     },
     {
       "path": "pnpm-lock.yaml",
-      "sha256": "sha256:4208be55ad502e8775d7c33e29058de9dd3ab76268cafd7d9fe0cedb19cfb133",
-      "bytes": 87259
+      "sha256": "sha256:86287d9fd965f9879e979e5a572d88a9434135812cf93257ec499bca886e2be4",
+      "bytes": 111895
     },
     {
       "path": "pnpm-workspace.yaml",
@@ -151,6 +156,11 @@
       "bytes": 4106
     },
     {
+      "path": "scripts/marketplace.mjs",
+      "sha256": "sha256:4720dc99240d42b74896f673033d9bad7cc265b5773d5be9e1dd59deaf4ad007",
+      "bytes": 11060
+    },
+    {
       "path": "scripts/package-stage.mjs",
       "sha256": "sha256:b5676215e8a47907bbb38ecb4e280c7b16678663ee8d754f88c57e472c67d38e",
       "bytes": 2779
@@ -162,8 +172,8 @@
     },
     {
       "path": "scripts/release.mjs",
-      "sha256": "sha256:a994fb06e3ec0b879c3c8d7d06a36ef9f3bf7a933dfd3414243a198bf8a0be0d",
-      "bytes": 21619
+      "sha256": "sha256:a11719579ef06f5730b8d1f4b6f0bf68c9bbfc090949a45ac3550b35710516a1",
+      "bytes": 21697
     },
     {
       "path": "scripts/test-editor.mjs",
@@ -212,8 +222,8 @@
     },
     {
       "path": "tests/editor/index.cjs",
-      "sha256": "sha256:11e8b2abbd274a9d6fc4e169947d55ed7aeca7c143aeee3990a20da3bc6b67b0",
-      "bytes": 7810
+      "sha256": "sha256:97f3925a6b4ea2abf419f04875532c76e1d072098070b4baf78f604d234343f6",
+      "bytes": 7822
     },
     {
       "path": "tests/extension.test.mjs",
@@ -226,14 +236,19 @@
       "bytes": 2977
     },
     {
+      "path": "tests/marketplace.test.mjs",
+      "sha256": "sha256:b4d6f28082588296793c1c0ee92b631dd05cddfd46ffd148c9d9b2d0405dba7d",
+      "bytes": 15416
+    },
+    {
       "path": "tests/package.test.mjs",
-      "sha256": "sha256:a1d25c0e83b0791da37fa832178ada576fc58564f932a8d5bac57dc20fc25288",
-      "bytes": 2125
+      "sha256": "sha256:a5c38c8c442c1ba3fc5bb80457fd9cf9286773e22417b7d047e64418805b0dd5",
+      "bytes": 2155
     },
     {
       "path": "tests/release.test.mjs",
-      "sha256": "sha256:108c81aac32da4ac2df448bcbebbdb715c7fd02c60f9b43b24a95e2906383ea8",
-      "bytes": 24472
+      "sha256": "sha256:27f624253e761703df70470a0a885656fcea3b523d6fbd2478a4a9ccfc968ab6",
+      "bytes": 24720
     }
   ]
 }

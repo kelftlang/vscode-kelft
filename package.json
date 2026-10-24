@@ -1,8 +1,8 @@
 {
-  "name": "@kelftlang/vscode",
-  "displayName": "Kelft",
+  "name": "@kelftlang/vscode-kelft",
+  "displayName": "Kelft for VS Code",
   "description": "Kelft icons, Core and Intent editing, static completion, native checks, and builds.",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "publisher": "kelftlang",
   "license": "(MIT OR Apache-2.0)",
   "repository": {"type": "git", "url": "https://github.com/kelftlang/vscode-kelft.git"},
@@ -47,6 +47,7 @@
     "esbuild": "0.28.2",
     "vscode-textmate": "9.2.0",
     "vscode-oniguruma": "2.0.1",
-    "@vscode/vsce": "3.6.2"
+    "@vscode/vsce": "3.6.2",
+    "ovsx": "1.3.0"
   }
 }

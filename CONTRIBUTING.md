@@ -28,9 +28,9 @@ Keep changes focused, explain their purpose, and describe the validation you ran
 Add relevant regression coverage for behavior changes and screenshots for visual
 changes. Preserve third-party notices and follow existing code conventions.
 
-`pnpm package` creates `vscode-0.1.2.vsix` and a SHA-256 receipt. The source package
-is named `@kelftlang/vscode`; packaging uses a temporary manifest with the unscoped
-name `vscode`, producing extension ID `kelftlang.vscode` without changing the
+`pnpm package` creates `vscode-kelft-0.1.3.vsix` and a SHA-256 receipt. The source package
+is named `@kelftlang/vscode-kelft`; packaging uses a temporary manifest with the unscoped
+name `vscode-kelft`, producing extension ID `kelftlang.vscode-kelft` without changing the
 source manifest.
 
 To test the packaged extension in an isolated editor profile, set
@@ -41,7 +41,8 @@ icon-theme screenshots. These tests leave your normal editor profile unchanged.
 
 Maintainers preparing a release should follow [the release guide](docs/releasing.md)
 for the manual GitHub Actions trigger, signed source requirement, draft review
-and marketplace submissions.
+and manually triggered marketplace submissions. Publishing accepts an existing
+immutable release artifact; it never rebuilds the VSIX.
 
 ## Contribution terms
 

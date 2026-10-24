@@ -1,0 +1,60 @@
+name: Publish marketplaces
+on:
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: Published immutable GitHub release tag (for example v0.1.3)
+        required: true
+        type: string
+      destination:
+        description: Registries to submit to (select only the remaining registry when retrying)
+        required: true
+        default: both
+        type: choice
+        options:
+          - both
+          - visual-studio-marketplace
+          - open-vsx
+permissions:
+  contents: read
+concurrency:
+  group: publish-marketplaces-${{ github.repository }}
+  cancel-in-progress: false
+jobs:
+  publish:
+    if: github.repository == 'kelftlang/vscode-kelft' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    env:
+      RELEASE_TAG: ${{ inputs.release_tag }}
+      MARKETPLACE_DESTINATION: ${{ inputs.destination }}
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
+        with:
+          node-version: '24'
+          package-manager-cache: false
+      - uses: pnpm/action-setup@a8198c4bff370c8506180b035930dea56dbd5288 # v5
+      - run: pnpm install --frozen-lockfile --ignore-scripts
+      - name: Verify published release and credential availability
+        run: node scripts/marketplace.mjs verify
+        env:
+          GH_TOKEN: ${{ github.token }}
+          HAS_VSCE_PAT: ${{ secrets.VSCE_PAT != '' }}
+          HAS_OVSX_PAT: ${{ secrets.OVSX_PAT != '' }}
+      - name: Submit to Visual Studio Marketplace
+        if: inputs.destination == 'both' || inputs.destination == 'visual-studio-marketplace'
+        run: node scripts/marketplace.mjs publish-vscode
+        env:
+          VSCE_PAT: ${{ secrets.VSCE_PAT }}
+      - name: Submit to Open VSX
+        if: inputs.destination == 'both' || inputs.destination == 'open-vsx'
+        run: node scripts/marketplace.mjs publish-open-vsx
+        env:
+          OVSX_PAT: ${{ secrets.OVSX_PAT }}
+      - name: Report submission results
+        if: always()
+        run: node scripts/marketplace.mjs summary

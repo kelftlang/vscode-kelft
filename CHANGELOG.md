@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.1.3
+
+- Rename the extension to `vscode-kelft` (ID `kelftlang.vscode-kelft`) so its
+  Marketplace name no longer collides with `vscode`.
+- Add manually triggered publishing of verified immutable GitHub release artifacts
+  to Visual Studio Marketplace and Open VSX, with separate destination retries.
+- Users of `kelftlang.vscode` must install the renamed extension; the new identity
+  does not automatically replace the previous installation. Settings and commands
+  retain their existing `kelft.*` names.
+
 ## 0.1.2
 
 Initial release of Kelft for VS Code and compatible editors.
