@@ -9,11 +9,11 @@ const root = path.resolve(import.meta.dirname, '..');
 test('scoped package identity becomes a valid VSIX identity without altering other metadata', () => {
   const source = JSON.parse(fs.readFileSync(path.join(root, 'package.json')));
   const manifest = packageManifest(source);
-  assert.equal(source.name, '@kelftlang/vscode');
-  assert.equal(manifest.name, 'vscode');
+  assert.equal(source.name, '@kelftlang/vscode-kelft');
+  assert.equal(manifest.name, 'vscode-kelft');
   assert.equal(manifest.publisher, 'kelftlang');
-  assert.equal(manifest.version, '0.1.2');
-  assert.equal(archiveName(source), 'vscode-0.1.2.vsix');
+  assert.equal(manifest.version, '0.1.3');
+  assert.equal(archiveName(source), 'vscode-kelft-0.1.3.vsix');
   assert.deepEqual({...manifest, name: source.name}, source);
   for (const name of ['@scope/../../bad', 'bad/name', '../vscode', '@scope/']) assert.throws(() => packageManifest({...source, name}), /Invalid/);
   assert.throws(() => packageManifest({...source, version: '../bad'}), /Invalid/);
@@ -25,8 +25,8 @@ test('package staging preserves the source manifest and removes its temporary tr
     let temporary;
     const run = () => withPackageStage(root, async (stage, manifest) => {
       temporary = stage;
-      assert.equal(JSON.parse(fs.readFileSync(path.join(stage, 'package.json'))).name, 'vscode');
-      assert.equal(manifest.publisher + '.' + manifest.name, 'kelftlang.vscode');
+      assert.equal(JSON.parse(fs.readFileSync(path.join(stage, 'package.json'))).name, 'vscode-kelft');
+      assert.equal(manifest.publisher + '.' + manifest.name, 'kelftlang.vscode-kelft');
       assert.ok(fs.existsSync(path.join(stage, 'LICENSES/MIT-0.txt')));
       assert.ok(!fs.existsSync(path.join(stage, 'LICENSES/CC-BY-4.0.txt')));
       assert.deepEqual(fs.readFileSync(sourceFile), before);

@@ -13,12 +13,13 @@ const semver = dependency('semver');
 const yauzl = dependency('yauzl');
 export const repository = 'kelftlang/vscode-kelft';
 export const workflow = repository + '/.github/workflows/release.yml';
+export const extensionID = 'kelftlang.vscode-kelft';
 const digest = bytes => createHash('sha256').update(bytes).digest('hex');
 const check = (condition, message) => {if (!condition) throw new Error(message);};
 
 export function releaseIdentity(source) {
   const manifest = packageManifest(source);
-  check(source.name === '@kelftlang/vscode' && manifest.name === 'vscode' && manifest.publisher === 'kelftlang', 'Release identity must be @kelftlang/vscode / kelftlang.vscode.');
+  check(source.name === '@kelftlang/vscode-kelft' && manifest.name === 'vscode-kelft' && manifest.publisher === 'kelftlang', 'Release identity must be @kelftlang/vscode-kelft / ' + extensionID + '.');
   check(semver.valid(manifest.version) === manifest.version, 'Release version must be canonical SemVer.');
   const file = archiveName(source);
   return {version: manifest.version, tag: 'v' + manifest.version, title: 'Kelft for VS Code v' + manifest.version,
@@ -152,7 +153,7 @@ export async function inspectVSIX(file, source, checksum) {
   const manifest = JSON.parse(rows.get('extension/package.json')?.toString() ?? 'null');
   check(manifest && JSON.stringify(manifest) === JSON.stringify(packageManifest(source)), 'Packaged manifest differs from the normalized source manifest.');
   const xml = rows.get('extension.vsixmanifest')?.toString() ?? '';
-  check(new RegExp(`<Identity\\b[^>]*\\bId="vscode"[^>]*\\bVersion="${identity.version.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}"[^>]*\\bPublisher="kelftlang"`).test(xml), 'VSIX identity/version does not match the release.');
+  check(new RegExp(`<Identity\\b[^>]*\\bId="vscode-kelft"[^>]*\\bVersion="${identity.version.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}"[^>]*\\bPublisher="kelftlang"`).test(xml), 'VSIX identity/version does not match the release.');
   for (const name of ['LICENSE.txt','LICENSE-MIT','LICENSE-APACHE','LICENSES/MIT-0.txt','THIRD-PARTY-NOTICES.md','readme.md','changelog.md','docs/licensing.md','docs/releasing.md','licensing.json','dist/extension.cjs','assets/icon.png','assets/intrinsics.json','assets/kelft-icon-light.svg','assets/kelft-icon-dark.svg','syntaxes/kelft.tmLanguage.json','snippets/kelft.json']) check(rows.has('extension/' + name), 'Required package content missing: ' + name);
   for (const name of rows.keys()) check(!/^extension\/(?:src|scripts|tests|node_modules|\.github|\.package)\//.test(name) && !name.endsWith('.publication.json') && !name.includes('CC-BY-4.0'), 'Unexpected package content: ' + name);
   return {sha256: digest(bytes), bytes: bytes.length, files: rows.size};
@@ -165,7 +166,7 @@ export function attestationArgs(file, bundle, sha) {
 
 export function releaseNotes(identity, section, context, hash, attestationURL) {
   check(attestationURL.startsWith(`https://github.com/${repository}/attestations/`), 'Unexpected attestation URL.');
-  return `${section}\n\n## Build and verification\n\n- Source: [\`${context.sha}\`](https://github.com/${repository}/commit/${context.sha}) (GitHub-signed and verified).\n- Build: [GitHub Actions run](${context.run}).\n- Provenance: [verified build attestation](${attestationURL}).\n- Extension ID: \`kelftlang.vscode\`.\n- SHA-256 of \`${identity.file}\`: \`${hash}\`.\n\nVerify the downloaded extension:\n\n\`\`\`sh\ngh attestation verify ${identity.file} --repo ${repository} --signer-workflow ${workflow} --source-digest ${context.sha}\ngh release verify ${identity.tag} --repo ${repository}\ngh release verify-asset ${identity.tag} ${identity.file} --repo ${repository}\n\`\`\`\n\nThe Verified Git signature applies to the source commit. The version tag points to that commit. Release integrity verification is available after publication with release immutability enabled.\n`;
+  return `${section}\n\n## Build and verification\n\n- Source: [\`${context.sha}\`](https://github.com/${repository}/commit/${context.sha}) (GitHub-signed and verified).\n- Build: [GitHub Actions run](${context.run}).\n- Provenance: [verified build attestation](${attestationURL}).\n- Extension ID: \`${extensionID}\`.\n- SHA-256 of \`${identity.file}\`: \`${hash}\`.\n\nVerify the downloaded extension:\n\n\`\`\`sh\ngh attestation verify ${identity.file} --repo ${repository} --signer-workflow ${workflow} --source-digest ${context.sha}\ngh release verify ${identity.tag} --repo ${repository}\ngh release verify-asset ${identity.tag} ${identity.file} --repo ${repository}\n\`\`\`\n\nThe Verified Git signature applies to the source commit. The version tag points to that commit. Release integrity verification is available after publication with release immutability enabled.\n`;
 }
 
 export async function prepareDraft({api, upload, download, identity, context, notes, assets}) {

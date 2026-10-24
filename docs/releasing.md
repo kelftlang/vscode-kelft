@@ -25,24 +25,24 @@ and [enabling release immutability](https://docs.github.com/en/code-security/how
 ## Prepare and approve a release
 
 1. Set the intended version in `package.json` and add the matching `## VERSION`
-   section to `CHANGELOG.md`. The first release uses `0.1.2`. Run `pnpm test` and
+   section to `CHANGELOG.md`. The renamed extension starts at `0.1.3`. Run `pnpm test` and
    `pnpm package`, then review and merge through GitHub.
 2. Open **Actions → Prepare release → Run workflow** and select **main**. The
    workflow definition must already be on the default branch for manual dispatch.
 3. Wait for the run to succeed. Its single Ubuntu job has an eight-minute limit.
-   It tests the extension, packages the scoped manifest as `kelftlang.vscode`,
+   It tests the extension, packages the scoped manifest as `kelftlang.vscode-kelft`,
    inspects its identity and contents, attests the VSIX and checksum, and verifies
    that provenance against the exact source commit and hosted workflow.
 4. Follow the draft link in the Actions summary. Review its changelog notes,
    source commit, build and attestation links, checksum and three attached assets:
-   `vscode-0.1.2.vsix`, `vscode-0.1.2.vsix.sha256`, and
-   `vscode-0.1.2.vsix.sigstore.json`. Asset metadata and downloaded bytes have been
+   `vscode-kelft-0.1.3.vsix`, `vscode-kelft-0.1.3.vsix.sha256`, and
+   `vscode-kelft-0.1.3.vsix.sigstore.json`. Asset metadata and downloaded bytes have been
    checked before the workflow marks the draft ready.
 5. Confirm release immutability is enabled and click **Publish release**. GitHub
    locks the tag and assets and creates the release attestation. Check that the
    release displays **Immutable**.
 
-The version determines the tag (`v0.1.2`) and title (**Kelft for VS Code v0.1.2**).
+The version determines the tag (`v0.1.3`) and title (**Kelft for VS Code v0.1.3**).
 The tag points to the triggering commit and is not separately signed. GitHub's
 **Verified** Git badge describes the source commit. The VSIX has a cryptographically
 signed build attestation linking its bytes to the repository, commit and workflow;
@@ -87,32 +87,95 @@ The release notes include the exact source commit and checksum. With a current
 [GitHub CLI](https://cli.github.com/manual/gh_attestation_verify), run:
 
 ```sh
-gh attestation verify vscode-0.1.2.vsix --repo kelftlang/vscode-kelft --signer-workflow kelftlang/vscode-kelft/.github/workflows/release.yml --source-digest SOURCE_COMMIT
-gh release verify v0.1.2 --repo kelftlang/vscode-kelft
-gh release verify-asset v0.1.2 vscode-0.1.2.vsix --repo kelftlang/vscode-kelft
+gh attestation verify vscode-kelft-0.1.3.vsix --repo kelftlang/vscode-kelft --signer-workflow kelftlang/vscode-kelft/.github/workflows/release.yml --source-digest SOURCE_COMMIT
+gh release verify v0.1.3 --repo kelftlang/vscode-kelft
+gh release verify-asset v0.1.3 vscode-kelft-0.1.3.vsix --repo kelftlang/vscode-kelft
 ```
 
 Replace `SOURCE_COMMIT` with the release's full commit SHA. To use the attached
-provenance bundle, add `--bundle vscode-0.1.2.vsix.sigstore.json` to the first
+provenance bundle, add `--bundle vscode-kelft-0.1.3.vsix.sigstore.json` to the first
 command. The release verification commands apply after immutable publication.
 The checksum receipt provides a separate SHA-256 comparison; on PowerShell use
-`Get-FileHash ./vscode-0.1.2.vsix -Algorithm SHA256`.
+`Get-FileHash ./vscode-kelft-0.1.3.vsix -Algorithm SHA256`.
 
 ## Marketplace listings
 
 Maintain publisher ownership of `kelftlang` in Visual Studio Marketplace and the
 matching namespace in Open VSX. Complete each service's account and publisher
-requirements before the first submission. Publish the **same release VSIX** to
-both registries, preserving extension ID `kelftlang.vscode`, version and bytes:
+requirements before the first submission, including the Eclipse Publisher
+Agreement and namespace publishing access for Open VSX. The extension name is
+`vscode-kelft`, display name **Kelft for VS Code**, and installed ID
+`kelftlang.vscode-kelft`. The former `vscode` name was rejected as already taken;
+local packaging cannot reserve a name or establish registry acceptance.
+
+### Configure publishing credentials
+
+In `kelftlang/vscode-kelft`, configure **Settings → Secrets and variables →
+Actions → Repository secrets**:
+
+- `VSCE_PAT`: an Azure DevOps Marketplace publishing token for an account with
+  publishing access to `kelftlang`. Grant the required **Marketplace: Manage**
+  scope and follow Microsoft's current token organization requirements.
+- `OVSX_PAT`: an Open VSX access token for an account authorized to publish in
+  the `kelftlang` namespace.
+
+Use dedicated tokens, set expirations where supported, rotate before expiry, and
+revoke old tokens after replacing the secrets. Never store tokens in source,
+workflow inputs, shell arguments, or release assets. Global Azure DevOps PATs
+are scheduled for retirement on December 1, 2026; follow Microsoft's current
+[authentication guidance](https://code.visualstudio.com/api/working-with-extensions/publishing-extension)
+when creating or rotating credentials. This initial workflow uses token secrets;
+federated publishing is not configured.
+
+### Manually submit a published release
+
+1. Run **Prepare release** from `main`, review the completed draft, and publish
+   it with release immutability enabled using the process above.
+2. Open **Actions → Publish marketplaces → Run workflow**, select `main`, enter
+   the exact release tag (initially `v0.1.3`), and select `both`,
+   `visual-studio-marketplace`, or `open-vsx`.
+3. The workflow checks all selected credentials are configured, resolves the
+   release tag to its exact commit, and reads that commit's source manifest.
+   It accepts published immutable releases with numeric `major.minor.patch`
+   versions only; drafts, mutable releases and prerelease channels are rejected.
+4. A single eight-minute Ubuntu job downloads the VSIX, SHA-256 receipt and
+   provenance bundle. It inspects both embedded identities and package contents,
+   verifies downloaded bytes, GitHub release integrity, and the hosted build
+   attestation for the exact release commit. It never rebuilds the extension.
+5. The workflow uploads the **same verified release VSIX** to the selected
+   registries, Visual Studio Marketplace first when both are selected. Each
+   upload step receives only its own registry token; preflight sees availability
+   flags rather than token values. GitHub permissions remain read-only.
+6. Review the Actions summary and each registry's validation status. A successful
+   submission does not guarantee approval or immediate listing availability.
+
+Runs serialize without cancellation. If the first registry fails, the second is
+not attempted. If one submission succeeds and the other fails, correct the cause
+and run the workflow again with **only the remaining destination** and the same
+release tag. The workflow does not suppress duplicate-version errors, overwrite
+registry versions, move tags, or change GitHub releases. A changed package needs
+a new version and a new reviewed immutable release.
+
+**Prepare release** remains separate and holds no marketplace credentials.
+Neither PR validation nor publishing a GitHub release automatically triggers
+marketplace submission. The publishing workflow must be on `main` before its
+manual trigger is available. Existing installs of `kelftlang.vscode` must install
+the renamed extension explicitly; see the README migration note.
+
+### Manual upload alternative
+
+Download the three assets from the published immutable release and verify them
+using the commands above. Publish the **same release VSIX** to both registries,
+preserving extension ID, version and bytes. Provide credentials through the
+`VSCE_PAT` and `OVSX_PAT` environment variables:
 
 ```sh
-pnpm exec vsce publish --packagePath vscode-0.1.2.vsix
+pnpm exec vsce publish --packagePath vscode-kelft-0.1.3.vsix
+pnpm exec ovsx publish vscode-kelft-0.1.3.vsix --registryUrl https://open-vsx.org
 ```
 
-For Open VSX, use its web upload or `ovsx publish vscode-0.1.2.vsix` with an
-authenticated Open VSX CLI. Keep marketplace credentials out of the repository.
 Do not publish directly from the scoped source manifest or rebuild the package
-between submissions. This workflow does not hold marketplace credentials.
+between submissions. Manual web uploads are also possible using that same VSIX.
 
 See [Visual Studio Marketplace publishing](https://code.visualstudio.com/api/working-with-extensions/publishing-extension)
-and [Open VSX publishing](https://github.com/eclipse/openvsx/wiki/Publishing-Extensions).
+and [Open VSX publishing](https://github.com/eclipse-openvsx/openvsx/wiki/Publishing-Extensions).

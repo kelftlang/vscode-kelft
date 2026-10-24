@@ -21,14 +21,14 @@ const env = {GITHUB_REPOSITORY: repository, GITHUB_SERVER_URL: 'https://github.c
   GITHUB_REF: 'refs/heads/main', GITHUB_SHA: sha, GITHUB_RUN_ID: '123', GITHUB_RUN_ATTEMPT: '1'};
 
 test('release identity, exact manual main source, and one matching changelog section are mandatory', () => {
-  assert.equal(identity.tag, 'v0.1.2'); assert.equal(identity.title, 'Kelft for VS Code v0.1.2');
-  assert.equal(identity.file, 'vscode-0.1.2.vsix'); assert.equal(identity.prerelease, false);
+  assert.equal(identity.tag, 'v0.1.3'); assert.equal(identity.title, 'Kelft for VS Code v0.1.3');
+  assert.equal(identity.file, 'vscode-kelft-0.1.3.vsix'); assert.equal(identity.prerelease, false);
   assert.equal(releaseIdentity({...source, version: '0.2.0-beta.1'}).prerelease, true);
   for (const patch of [{name: 'vscode'}, {publisher: 'other'}, {version: '01.0.0'}]) assert.throws(() => releaseIdentity({...source, ...patch}));
   assert.deepEqual(releaseContext(env), context);
   for (const patch of [{GITHUB_REF: 'refs/heads/dev'}, {GITHUB_EVENT_NAME: 'push'}, {GITHUB_SHA: 'main'}, {GITHUB_REPOSITORY: 'other/repo'}, {GITHUB_RUN_ATTEMPT: ''}]) assert.throws(() => releaseContext({...env, ...patch}));
-  assert.equal(changelogSection('# Changes\r\n\r\n## 0.1.2\r\n\r\n- New features.\r\n\r\n## 0.0.1\r\nOlder', '0.1.2'), '- New features.');
-  for (const text of ['## 0.2.0\nMissing', '## 0.1.2\n', '## 0.1.2\nFirst\n## 0.1.2\nDuplicate']) assert.throws(() => changelogSection(text, '0.1.2'), /section/);
+  assert.equal(changelogSection('# Changes\r\n\r\n## 0.1.3\r\n\r\n- New features.\r\n\r\n## 0.0.1\r\nOlder', '0.1.3'), '- New features.');
+  for (const text of ['## 0.2.0\nMissing', '## 0.1.3\n', '## 0.1.3\nFirst\n## 0.1.3\nDuplicate']) assert.throws(() => changelogSection(text, '0.1.3'), /section/);
 });
 
 test('source signature rejects unsigned, invalid and differently signed commits', () => {
@@ -69,7 +69,7 @@ async function zipFixture(t, mutate = () => {}) {
   const rows = new Map(['LICENSE.txt','LICENSE-MIT','LICENSE-APACHE','LICENSES/MIT-0.txt','THIRD-PARTY-NOTICES.md','readme.md','changelog.md','docs/licensing.md','docs/releasing.md','licensing.json','dist/extension.cjs',
     'assets/icon.png','assets/intrinsics.json','assets/kelft-icon-light.svg','assets/kelft-icon-dark.svg','syntaxes/kelft.tmLanguage.json','snippets/kelft.json'].map(name => ['extension/' + name, 'fixture']));
   rows.set('extension/package.json', JSON.stringify(packageManifest(source)));
-  rows.set('extension.vsixmanifest', '<Identity Id="vscode" Version="0.1.2" Publisher="kelftlang" />');
+  rows.set('extension.vsixmanifest', '<Identity Id="vscode-kelft" Version="0.1.3" Publisher="kelftlang" />');
   mutate(rows);
   const zip = new yazl.ZipFile(), chunks = [];
   const complete = new Promise((resolve, reject) => {zip.outputStream.on('data', bytes => chunks.push(bytes));zip.outputStream.on('end', resolve);zip.outputStream.on('error', reject);});
@@ -86,7 +86,9 @@ test('VSIX inspection enforces normalized manifest, version, required contents a
   await assert.rejects(inspectVSIX(fixture.file, source, 'bad checksum'), /checksum/);
   await assert.rejects(inspectVSIX(fixture.file, {...source, version: '0.2.0'}, fixture.checksum), /file or size/);
   for (const mutate of [rows => rows.delete('extension/LICENSE.txt'), rows => rows.set('extension/package.json', JSON.stringify(source)),
-    rows => rows.set('extension.vsixmanifest', '<Identity Id="vscode" Version="0.2.0" Publisher="kelftlang" />'),
+    rows => rows.set('extension.vsixmanifest', '<Identity Id="vscode" Version="0.1.3" Publisher="kelftlang" />'),
+    rows => rows.set('extension.vsixmanifest', '<Identity Id="vscode-kelft" Version="0.1.3" Publisher="other" />'),
+    rows => rows.set('extension.vsixmanifest', '<Identity Id="vscode-kelft" Version="0.2.0" Publisher="kelftlang" />'),
     rows => rows.set('extension/scripts/private.mjs', 'private'), rows => rows.set('extension/LICENSES/CC-BY-4.0.txt', 'obsolete')]) {
     const invalid = await zipFixture(t, mutate); await assert.rejects(inspectVSIX(invalid.file, source, invalid.checksum));
   }

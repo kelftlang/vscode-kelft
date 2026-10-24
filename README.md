@@ -6,14 +6,19 @@ file icons, editing assistance, and native compiler integration.
 
 ## Installation
 
-Use **Extensions: Install from VSIX...** and select `vscode-0.1.2.vsix`, then
+Use **Extensions: Install from VSIX...** and select `vscode-kelft-0.1.3.vsix`, then
 reload the editor if prompted. You can also install from the command line:
 
 ```sh
-code --install-extension vscode-0.1.2.vsix
+code --install-extension vscode-kelft-0.1.3.vsix
 ```
 
 In VSCodium, use `codium` in place of `code`.
+
+The extension ID is `kelftlang.vscode-kelft`. If you previously installed
+`kelftlang.vscode` from a VSIX, uninstall that extension and install this renamed
+one to avoid duplicate providers. Existing `kelft.*` settings and commands keep
+their names; the old installation will not automatically update to the new ID.
 
 ## Features
 
@@ -89,7 +94,7 @@ Blocked Intent decisions appear as **needs human**.
 - Text assistance supports documents up to 2 MiB. Import completion examines one
   directory at a time and returns up to 256 suggestions.
 
-Version 0.1.2 provides static completion and import navigation. General semantic
+Version 0.1.3 provides static completion and import navigation. General semantic
 completion, symbol navigation, references, rename, formatting, and debugging are
 not included. Building a program does not run it or generate an Intent implementation.
 
